@@ -49,19 +49,140 @@ void printBoard(string s) {
   }
 }
 
+int getRank(uint64_t pos) {
+
+  uint64_t init = 0xFF; // 000....1111 1111
+
+  int rank = 1;
+
+  while ((init & pos) == 0) {
+    init = init << 8;
+    rank++;
+  }
+  return rank;
+}
+
+int getFile(uint64_t pos) {
+
+  uint64_t init = 0x0101010101010101; // 0000 0001 0000 0001
+
+  int file = 1;
+
+  while ((init & pos) == 0) {
+    init = init << 1;
+    file++;
+  }
+  return file;
+}
+
+uint64_t getRookMoves(uint64_t pos, Board board) {
+  int rank = getRank(pos);
+  int file = getFile(pos);
+
+  uint64_t initRank = 0xFF;
+  uint64_t initFile = 0x0101010101010101;
+
+  uint64_t attack =
+      (pos | (initRank << (rank - 1) * 8)) | (pos | (initFile << (file - 1)));
+  return attack;
+}
+
+uint64_t getPawnMoves(uint64_t pos, Board board, bool isWhite) {
+  if (isWhite) {
+    return pos << 8;
+  }
+  return pos >> 8;
+}
+
+uint64_t getBishopMoves(uint64_t pos, Board board) {
+
+  int rank = getRank(pos);
+  int file = getFile(pos);
+
+  uint64_t attack = pos;
+
+  /*Right upper diagonal*/
+  for(int i=1;i<(9-file); i++){
+    attack |= (pos << 9*i);
+  }
+
+  /*Left upper diagonal*/
+  for(int i=1;i<file;i++){
+    attack |= (pos << 7*i & ~board.hfile) ;
+  }
+
+  /*left bottom diagonal*/
+  for(int i=rank-1;i>=1;i--){
+    attack |= (pos >> 7*(rank - i));
+  }
+
+
+  /*left bottom diagonal*/
+  for(int i=rank-1;i>=0;i--){
+    attack |= (pos >> 9*(rank - i));
+  }
+
+  return attack;
+}
+
+uint64_t getQueenMove(uint64_t pos, Board board){
+  
+  int rank = getRank(pos);
+  int file = getFile(pos);
+
+  uint64_t initRank = 0xFF;
+  uint64_t initFile = 0x0101010101010101;
+
+  uint64_t attack = pos; 
+
+  attack |=
+      (pos | (initRank << (rank - 1) * 8)) | (pos | (initFile << (file - 1)));
+ 
+  /*Right upper diagonal*/
+  for(int i=1;i<(9-file); i++){
+    attack |= (pos << 9*i);
+  }
+
+  /*Left upper diagonal*/
+  for(int i=1;i<file;i++){
+    attack |= (pos << 7*i & ~board.hfile) ;
+  }
+
+  /*left bottom diagonal*/
+  for(int i=rank-1;i>=1;i--){
+    attack |= (pos >> 7*(rank - i));
+  }
+
+
+  /*left bottom diagonal*/
+  for(int i=rank-1;i>=0;i--){
+    attack |= (pos >> 9*(rank - i));
+  }
+  
+  return attack;
+}
+
 int main() {
 
   /*Initialize the board*/
   Board board;
 
-  uint64_t p = 0x08; // ....0000 1000
-
+  uint64_t p = 0x10000000; // ....0000 1000
 
   printBoard(toBinary(p));
 
-  cout<<endl;
+  cout << endl;
 
-  uint64_t attacks = getKnightMoves(p, board);
+  cout << endl;
+  // uint64_t attacks = getKnightMoves(p, board);
+
+  // uint64_t attacks = getRookMoves(p, board);
+
+  // uint64_t attacks = getPawnMoves(p, board, false);
+
+  // uint64_t attacks = getBishopMoves(p, board);
+  
+  uint64_t attacks = getQueenMove(p, board);
 
   string s = toBinary(attacks);
 
