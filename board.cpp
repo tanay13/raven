@@ -1,4 +1,5 @@
 #include <cstdint>
+#include<cassert>
 #include <iostream>
 
 using namespace std;
@@ -23,7 +24,31 @@ struct Board {
 
   uint64_t hfile = 0x8080808080808080; // ......1000 0000 1000 0000 1000 0000
   uint64_t gfile = 0x4040404040404040; // 0100 0000 0100 0000
+
+  /*Occupancy..*/
+  uint64_t whiteBoard = whitePawns | whiteKnights | whiteBishops | whiteKing |
+                        whiteQueen | whiteRooks;
+  uint64_t blackBoard = blackPawns | blackKnights | blackBishops | blackQueen |
+                        blackRooks | blackKing;
+
+  uint64_t allPieces = whiteBoard | blackBoard;
 };
+
+void boardUpdate(Board &board) {
+
+  board.whiteBoard = board.whitePawns | board.whiteKnights |
+                     board.whiteBishops | board.whiteQueen | board.whiteRooks |
+                     board.whiteKing;
+  board.blackBoard = board.blackPawns | board.blackKnights |
+                     board.blackBishops | board.blackRooks | board.blackQueen |
+                     board.blackKing;
+
+  board.allPieces = board.whiteBoard | board.blackBoard;
+}
+
+bool isOccupied(uint64_t sq, Board &board) {
+  return sq & board.allPieces;
+}
 
 uint64_t getKnightMoves(uint64_t POS, Board board) {
 
@@ -96,10 +121,10 @@ uint64_t getPawnMoves(uint64_t pos, Board board, bool isWhite) {
 
 uint64_t getKingMoves(uint64_t pos, Board board) {
 
-  uint64_t attack = (pos << 8 ) | (pos >> 8) |
-                    (pos << 1 & ~board.aFile) | (pos >> 1 & ~board.hfile) |
-                    (pos << 9 & ~board.aFile) | (pos >> 9 & ~board.hfile) |
-                    (pos << 7 & ~board.hfile) | (pos >> 7 & ~board.aFile);
+  uint64_t attack = (pos << 8) | (pos >> 8) | (pos << 1 & ~board.aFile) |
+                    (pos >> 1 & ~board.hfile) | (pos << 9 & ~board.aFile) |
+                    (pos >> 9 & ~board.hfile) | (pos << 7 & ~board.hfile) |
+                    (pos >> 7 & ~board.aFile);
 
   return attack;
 }
@@ -175,12 +200,14 @@ int main() {
   /*Initialize the board*/
   Board board;
 
-  uint64_t p = 0x08; // ....0000 1000
+  // uint64_t p = board.whiteKnights; // ....0000 1000
+  //
+  // printBoard(toBinary(p));
+  //
+  // cout << endl;
 
-  printBoard(toBinary(p));
-
-  cout << endl;
-
+  assert(board.whiteBoard == 0x000000000000FFFFULL);
+  assert(board.blackBoard == 0xFFFF000000000000ULL);
   cout << endl;
   // uint64_t attacks = getKnightMoves(p, board);
 
@@ -192,11 +219,15 @@ int main() {
 
   // uint64_t attacks = getQueenMove(p, board);
 
-  uint64_t attacks  = getKingMoves(p, board);
+  // uint64_t attacks  = getKingMoves(p, board);
 
-  string s = toBinary(attacks);
+  // string s = toBinary(attacks);
 
-  printBoard(s);
+  // printBoard(s);
+
+  cout << endl << endl;
+
+  // cout<<getRank(p);
 
   return 0;
 }
