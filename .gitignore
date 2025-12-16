@@ -37,6 +37,7 @@
 *.out
 *.app
 main
+board
 # debug information files
 *.dwo
 *.dSYM
