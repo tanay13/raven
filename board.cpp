@@ -1,23 +1,23 @@
+#include <cassert>
 #include <cstdint>
-#include<cassert>
 #include <iostream>
 
 using namespace std;
 
 struct Board {
-  uint64_t whitePawns = 0x000000000000FF00ULL;
-  uint64_t whiteKnights = 0x0000000000000042ULL;
-  uint64_t whiteBishops = 0x0000000000000024ULL;
-  uint64_t whiteRooks = 0x0000000000000081ULL;
-  uint64_t whiteQueen = 0x0000000000000008ULL;
-  uint64_t whiteKing = 0x0000000000000010ULL;
+  uint64_t blackPawns = 0x000000000000FF00ULL;
+  uint64_t blackKnights = 0x0000000000000042ULL;
+  uint64_t blackBishops = 0x0000000000000024ULL;
+  uint64_t blackRooks = 0x0000000000000081ULL;
+  uint64_t blackQueen = 0x0000000000000008ULL;
+  uint64_t blackKing = 0x0000000000000010ULL;
 
-  uint64_t blackPawns = 0x00FF000000000000ULL;
-  uint64_t blackKnights = 0x4200000000000000ULL;
-  uint64_t blackBishops = 0x2400000000000000ULL;
-  uint64_t blackRooks = 0x8100000000000000ULL;
-  uint64_t blackQueen = 0x0800000000000000ULL;
-  uint64_t blackKing = 0x1000000000000000ULL;
+  uint64_t whitePawns = 0x00FF000000000000ULL;
+  uint64_t whiteKnights = 0x4200000000000000ULL;
+  uint64_t whiteBishops = 0x2400000000000000ULL;
+  uint64_t whiteRooks = 0x8100000000000000ULL;
+  uint64_t whiteQueen = 0x0800000000000000ULL;
+  uint64_t whiteKing = 0x1000000000000000ULL;
 
   uint64_t aFile = 0x0101010101010101; // ....0000 0001 0000 0001
   uint64_t bFile = 0x0202020202020202;
@@ -46,12 +46,10 @@ void boardUpdate(Board &board) {
   board.allPieces = board.whiteBoard | board.blackBoard;
 }
 
-bool isOccupied(uint64_t sq, Board &board) {
-  return sq & board.allPieces;
-}
+bool isOccupied(uint64_t sq, Board &board) { return sq & board.allPieces; }
 
 uint64_t getKnightMoves(uint64_t POS, Board &board, bool isWhite) {
-
+  
   uint64_t abFile = board.aFile | board.bFile;
   uint64_t ghFile = board.gfile | board.hfile;
 
@@ -59,21 +57,21 @@ uint64_t getKnightMoves(uint64_t POS, Board &board, bool isWhite) {
   uint64_t attacks = 00LL;
 
   attacks = (POS << 17 & ~board.aFile) | (POS << 15 & ~board.hfile) |
-                     (POS << 10 & ~abFile) | (POS << 6 & ~ghFile) |
-                     (POS >> 17 & ~board.hfile) | (POS >> 15 & ~board.aFile) |
-                     (POS >> 10 & ~ghFile) | (POS >> 6 & ~abFile);
+            (POS << 10 & ~abFile) | (POS << 6 & ~ghFile) |
+            (POS >> 17 & ~board.hfile) | (POS >> 15 & ~board.aFile) |
+            (POS >> 10 & ~ghFile) | (POS >> 6 & ~abFile);
 
   attacks &= ~ownPieces;
-  
-  return attacks ;
+
+  return attacks;
 };
 
 string toBinary(uint64_t x) { return bitset<64>(x).to_string(); }
 
 void printBoard(string s) {
-  for (int i = 0; i <= 63; i += 8) {
-    for (int j = 7; j >= 0; j--) {
-      cout << s[i + j] << " ";
+  for (int i = 63; i >= 0; i -= 8) {
+    for (int j = 0; j <= 7; j++) {
+      cout << s[i - j] << " ";
     }
     cout << endl;
   }
@@ -115,41 +113,45 @@ uint64_t getRookMoves(uint64_t pos, Board &board, bool isWhite) {
   uint64_t sameColorPieces = isWhite ? board.whiteBoard : board.blackBoard;
 
   /*North Direction*/
-  for(int rr = rank + 1; rr < 8; rr++){
-    uint64_t s = 1LL << ( rr*8 + file);
+  for (int rr = rank + 1; rr < 8; rr++) {
+    uint64_t s = 1LL << (rr * 8 + file);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
 
   /*South Direction*/
-  for(int rr = rank - 1; rr >= 0; rr--){
-    uint64_t s = 1LL << (rr*8 + file);
+  for (int rr = rank - 1; rr >= 0; rr--) {
+    uint64_t s = 1LL << (rr * 8 + file);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
 
   /*West Direction*/
-  for(int ff = file - 1; ff >= 0; ff--){
+  for (int ff = file - 1; ff >= 0; ff--) {
     uint64_t s = 1LL << (rank * 8 + ff);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
 
   /*East Direction*/
-  for(int ff = file + 1; ff < 8; ff++){
+  for (int ff = file + 1; ff < 8; ff++) {
     uint64_t s = 1LL << (rank * 8 + ff);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
@@ -163,15 +165,19 @@ uint64_t getPawnMoves(uint64_t pos, Board &board, bool isWhite) {
   uint64_t diag = 00LL;
   if (isWhite) {
     s = pos << 8;
-    if(!(s & board.allPieces)) attack |= s; 
-    
-    diag = ( (pos << 7 & ~board.hfile) | (pos << 9 & ~board.aFile) ) & board.blackBoard;
+    if (!(s & board.allPieces))
+      attack |= s;
+
+    diag = ((pos << 7 & ~board.hfile) | (pos << 9 & ~board.aFile)) &
+           board.blackBoard;
     attack |= diag;
-  }else{
+  } else {
     s = pos >> 8;
-    if(!(s & board.allPieces)) attack |= s; 
-    
-    diag = ( (pos >> 7 & ~board.aFile) | (pos >> 9 & ~board.hfile) ) & board.whiteBoard;
+    if (!(s & board.allPieces))
+      attack |= s;
+
+    diag = ((pos >> 7 & ~board.aFile) | (pos >> 9 & ~board.hfile)) &
+           board.whiteBoard;
     attack |= diag;
   }
   return attack;
@@ -200,40 +206,44 @@ uint64_t getBishopMoves(uint64_t pos, Board &board, bool isWhite) {
 
   /*NE diagonal*/
   for (int i = 1; i <= min(7 - file, 7 - rank); i++) {
-    uint64_t s =  (pos << 9 * i);
+    uint64_t s = (pos << 9 * i);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
 
   /*NW diagonal*/
   for (int i = 1; i <= min(file, 7 - rank); i++) {
-    uint64_t s = (pos << 7 * i); 
+    uint64_t s = (pos << 7 * i);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
 
   /*SE diagonal*/
   for (int i = 1; i <= min(7 - file, rank); i++) {
-    uint64_t s = (pos >> 7 * i); 
+    uint64_t s = (pos >> 7 * i);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
 
   /*SW diagonal*/
-  for (int i = 1; i <= min(file , rank); i++) {
+  for (int i = 1; i <= min(file, rank); i++) {
     uint64_t s = (pos >> 9 * i);
     attack |= s;
-    if(isOccupied(s, board)){
-      if(s & sameColorPieces) attack ^= s;
+    if (isOccupied(s, board)) {
+      if (s & sameColorPieces)
+        attack ^= s;
       break;
     }
   }
@@ -246,45 +256,58 @@ uint64_t getQueenMove(uint64_t pos, Board &board, bool isWhite) {
   uint64_t attack = 00LL;
 
   uint64_t sameColorPieces = isWhite ? board.whiteBoard : board.blackBoard;
-  
+
   attack |= getRookMoves(pos, board, isWhite);
   attack |= getBishopMoves(pos, board, isWhite);
-  
+
   return attack;
+}
+
+struct Move {
+  int from;
+  int to;
+  string piece;
+  string capturedPiece;
+};
+
+vector<int> moveList(uint64_t moves) {
+
+  uint64_t init = 0x0100000000000000ULL;
+  vector<int> moveList;
+  for (int i = 1; i < 64; i++) {
+    if (init & moves) {
+      int sq = 63 - __builtin_ctzll(init);
+      moveList.push_back(sq);
+    }
+    init = init >> 1;
+  }
+
+  return moveList;
 }
 
 int main() {
 
   /*Initialize the board*/
   Board board;
-  board.whiteBoard = 0, board.blackBoard = 0x01400000000000, board.allPieces = 0;
+  board.whiteBoard = 0, board.blackBoard = 0, board.allPieces = 0;
 
   uint64_t p = 0x8000000000; // ....0000 1000
-  // //
+
   printBoard(toBinary(p));
-  //
   cout << endl;
 
-  // assert(board.whiteBoard == 0x000000000000FFFFULL);
-  // assert(board.blackBoard == 0xFFFF000000000000ULL);
-  // cout << endl;
-  // uint64_t attacks = getKnightMoves(p, board, true);
-
-  // uint64_t attacks = getRookMoves(p, board, true);
-
-  uint64_t attacks = getPawnMoves(p, board, true);
-
-  // uint64_t attacks = getBishopMoves(p, board, true);
-
-  // uint64_t attacks = getQueenMove(p, board, true);
-
-  // uint64_t attacks  = getKingMoves(p, board);
+  uint64_t attacks = getKnightMoves(p, board, true);
 
   string s = toBinary(attacks);
 
   printBoard(s);
 
   cout << endl << endl;
+
+  vector<int> moves = moveList(attacks);
+
+  for (auto it : moves)
+    cout << it << " ";
 
   // cout<<getRank(p);
 
