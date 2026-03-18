@@ -5,19 +5,19 @@
 using namespace std;
 
 struct Board {
-  uint64_t blackPawns = 0x000000000000FF00ULL;
-  uint64_t blackKnights = 0x0000000000000042ULL;
-  uint64_t blackBishops = 0x0000000000000024ULL;
-  uint64_t blackRooks = 0x0000000000000081ULL;
-  uint64_t blackQueen = 0x0000000000000008ULL;
-  uint64_t blackKing = 0x0000000000000010ULL;
+  uint64_t whitePawns = 0x000000000000FF00ULL;
+  uint64_t whiteKnights = 0x0000000000000042ULL;
+  uint64_t whiteBishops = 0x0000000000000024ULL;
+  uint64_t whiteRooks = 0x0000000000000081ULL;
+  uint64_t whiteQueen = 0x0000000000000008ULL;
+  uint64_t whiteKing = 0x0000000000000010ULL;
 
-  uint64_t whitePawns = 0x00FF000000000000ULL;
-  uint64_t whiteKnights = 0x4200000000000000ULL;
-  uint64_t whiteBishops = 0x2400000000000000ULL;
-  uint64_t whiteRooks = 0x8100000000000000ULL;
-  uint64_t whiteQueen = 0x0800000000000000ULL;
-  uint64_t whiteKing = 0x1000000000000000ULL;
+  uint64_t blackPawns = 0x00FF000000000000ULL;
+  uint64_t blackKnights = 0x4200000000000000ULL;
+  uint64_t blackBishops = 0x2400000000000000ULL;
+  uint64_t blackRooks = 0x8100000000000000ULL;
+  uint64_t blackQueen = 0x0800000000000000ULL;
+  uint64_t blackKing = 0x1000000000000000ULL;
 
   uint64_t aFile = 0x0101010101010101; // ....0000 0001 0000 0001
   uint64_t bFile = 0x0202020202020202;
@@ -49,7 +49,7 @@ void boardUpdate(Board &board) {
 bool isOccupied(uint64_t sq, Board &board) { return sq & board.allPieces; }
 
 uint64_t getKnightMoves(uint64_t POS, Board &board, bool isWhite) {
-  
+
   uint64_t abFile = board.aFile | board.bFile;
   uint64_t ghFile = board.gfile | board.hfile;
 
@@ -69,9 +69,9 @@ uint64_t getKnightMoves(uint64_t POS, Board &board, bool isWhite) {
 string toBinary(uint64_t x) { return bitset<64>(x).to_string(); }
 
 void printBoard(string s) {
-  for (int i = 63; i >= 0; i -= 8) {
+  for (int i = 0; i < 64; i += 8) {
     for (int j = 0; j <= 7; j++) {
-      cout << s[i - j] << " ";
+      cout << s[i + j] << " ";
     }
     cout << endl;
   }
@@ -160,35 +160,56 @@ uint64_t getRookMoves(uint64_t pos, Board &board, bool isWhite) {
 }
 
 uint64_t getPawnMoves(uint64_t pos, Board &board, bool isWhite) {
-  uint64_t s = 00LL;
-  uint64_t attack = 00LL;
-  uint64_t diag = 00LL;
+  uint64_t moves = 00LL;
+  uint64_t singlePush, doublePush;
+
   if (isWhite) {
-    s = pos << 8;
-    if (!(s & board.allPieces))
-      attack |= s;
+    // Single Push
+    singlePush = pos << 8;
+    if (!(singlePush & board.allPieces)) {
+      moves |= singlePush;
 
-    diag = ((pos << 7 & ~board.hfile) | (pos << 9 & ~board.aFile)) &
-           board.blackBoard;
-    attack |= diag;
+      // Double Push (Only from Rank 2)
+      // 0x000000000000FF00 is Rank 2
+      if ((pos & 0x000000000000FF00ULL)) {
+        doublePush = singlePush << 8;
+        if (!(doublePush & board.allPieces))
+          moves |= doublePush;
+      }
+    }
+    // Capture moves
+    moves |= ((pos << 7 & ~board.hfile) | (pos << 9 & ~board.aFile)) &
+             board.blackBoard;
   } else {
-    s = pos >> 8;
-    if (!(s & board.allPieces))
-      attack |= s;
+    singlePush = pos >> 8;
+    if (!(singlePush & board.allPieces)) {
+      moves |= singlePush;
 
-    diag = ((pos >> 7 & ~board.aFile) | (pos >> 9 & ~board.hfile)) &
-           board.whiteBoard;
-    attack |= diag;
+      // Double Push (Only from Rank 7)
+      // 0x00FF000000000000 is Rank 7
+      if ((pos & 0x00FF000000000000ULL)) {
+        doublePush = singlePush >> 8;
+        if (!(doublePush & board.allPieces))
+          moves |= doublePush;
+      }
+    }
+    // Capture move
+    moves |= ((pos >> 7 & ~board.aFile) | (pos >> 9 & ~board.hfile)) &
+             board.whiteBoard;
   }
-  return attack;
+  return moves;
 }
 
-uint64_t getKingMoves(uint64_t pos, Board board) {
+uint64_t getKingMoves(uint64_t pos, Board board, bool isWhite) {
+
+  uint64_t ownPieces = isWhite ? board.whiteBoard : board.blackBoard;
 
   uint64_t attack = (pos << 8) | (pos >> 8) | (pos << 1 & ~board.aFile) |
                     (pos >> 1 & ~board.hfile) | (pos << 9 & ~board.aFile) |
                     (pos >> 9 & ~board.hfile) | (pos << 7 & ~board.hfile) |
                     (pos >> 7 & ~board.aFile);
+
+  attack &= ~ownPieces;
 
   return attack;
 }
@@ -263,12 +284,150 @@ uint64_t getQueenMove(uint64_t pos, Board &board, bool isWhite) {
   return attack;
 }
 
+enum PieceType { NONE = 0, PAWN = 1, KNIGHT, BISHOP, ROOK, QUEEN, KING };
+
 struct Move {
   int from;
   int to;
-  string piece;
-  string capturedPiece;
+  PieceType piece;
+  PieceType capturedPiece;
 };
+
+vector<Move> generateAllMoves(Board &board, bool isWhite) {
+  vector<Move> moves;
+
+  uint64_t ownBoard = isWhite ? board.whiteBoard : board.blackBoard;
+  uint64_t oppBoard = isWhite ? board.blackBoard : board.whiteBoard;
+
+  uint64_t pawns = isWhite ? board.whitePawns : board.blackPawns;
+  uint64_t knights = isWhite ? board.whiteKnights : board.blackKnights;
+  uint64_t bishops = isWhite ? board.whiteBishops : board.blackBishops;
+  uint64_t rooks = isWhite ? board.whiteRooks : board.blackRooks;
+  uint64_t queen = isWhite ? board.whiteQueen : board.blackQueen;
+  uint64_t king = isWhite ? board.whiteKing : board.blackKing;
+
+  if (pawns) {
+    uint64_t init = 0x0800000000000000ULL;
+    for (int i = 0; i < 64; i++) {
+      if (init & pawns) {
+        uint64_t attacks = getPawnMoves(init, board, isWhite);
+        Move m;
+        m.from = __builtin_ctzll(init) + 1;
+        m.piece = PAWN;
+        m.capturedPiece = NONE;
+        while (attacks) {
+          uint64_t to = attacks & -attacks; // gets the least significant bit
+          m.to = __builtin_ctzll(to) + 1;
+          moves.push_back(m);
+          attacks ^= to;
+        }
+      }
+      init = init >> 1;
+    }
+  }
+
+  if (bishops) {
+    uint64_t init = 0x0800000000000000ULL;
+    for (int i = 0; i < 64; i++) {
+      if (init & bishops) {
+        uint64_t attacks = getBishopMoves(init, board, isWhite);
+        Move m;
+        m.from = __builtin_ctzll(init) + 1;
+        m.piece = BISHOP;
+        m.capturedPiece = NONE;
+        while (attacks) {
+          uint64_t to = attacks & -attacks; // gets the least significant bit
+          m.to = __builtin_ctzll(to) + 1;
+          moves.push_back(m);
+          attacks ^= to;
+        }
+      }
+      init = init >> 1;
+    }
+  }
+
+  if (knights) {
+    uint64_t init = 0x0800000000000000ULL;
+    for (int i = 0; i < 64; i++) {
+      if (init & knights) {
+        uint64_t attacks = getKnightMoves(init, board, isWhite);
+        Move m;
+        m.from = __builtin_ctzll(init) + 1;
+        m.piece = KNIGHT;
+        m.capturedPiece = NONE;
+        while (attacks) {
+          uint64_t to = attacks & -attacks; // gets the least significant bit
+          m.to = __builtin_ctzll(to) + 1;
+          moves.push_back(m);
+          attacks ^= to;
+        }
+      }
+      init = init >> 1;
+    }
+  }
+
+  if (rooks) {
+    uint64_t init = 0x0800000000000000ULL;
+    for (int i = 0; i < 64; i++) {
+      if (init & rooks) {
+        uint64_t attacks = getRookMoves(init, board, isWhite);
+        Move m;
+        m.from = __builtin_ctzll(init) + 1;
+        m.piece = ROOK;
+        m.capturedPiece = NONE;
+        while (attacks) {
+          uint64_t to = attacks & -attacks; // gets the least significant bit
+          m.to = __builtin_ctzll(to) + 1;
+          moves.push_back(m);
+          attacks ^= to;
+        }
+      }
+      init = init >> 1;
+    }
+  }
+
+  if (queen) {
+    uint64_t init = 0x0800000000000000ULL;
+    for (int i = 0; i < 64; i++) {
+      if (init & queen) {
+        uint64_t attacks = getQueenMove(init, board, isWhite);
+        Move m;
+        m.from = __builtin_ctzll(init) + 1;
+        m.piece = QUEEN;
+        m.capturedPiece = NONE;
+        while (attacks) {
+          uint64_t to = attacks & -attacks; // gets the least significant bit
+          m.to = __builtin_ctzll(to) + 1;
+          moves.push_back(m);
+          attacks ^= to;
+        }
+      }
+      init = init >> 1;
+    }
+  }
+
+  if (king) {
+    uint64_t init = 0x0800000000000000ULL;
+    for (int i = 0; i < 64; i++) {
+      if (init & king) {
+        uint64_t attacks = getKingMoves(init, board, isWhite);
+        Move m;
+        m.from = __builtin_ctzll(init) + 1;
+        m.piece = KING;
+        m.capturedPiece = NONE;
+        while (attacks) {
+          uint64_t to = attacks & -attacks; // gets the least significant bit
+          m.to = __builtin_ctzll(to) + 1;
+          moves.push_back(m);
+          attacks ^= to;
+        }
+      }
+      init = init >> 1;
+    }
+  }
+
+  return moves;
+}
 
 vector<int> moveList(uint64_t moves) {
 
@@ -276,7 +435,7 @@ vector<int> moveList(uint64_t moves) {
   vector<int> moveList;
   for (int i = 1; i < 64; i++) {
     if (init & moves) {
-      int sq = 63 - __builtin_ctzll(init);
+      int sq = 64 - __builtin_ctzll(init);
       moveList.push_back(sq);
     }
     init = init >> 1;
@@ -289,27 +448,17 @@ int main() {
 
   /*Initialize the board*/
   Board board;
-  board.whiteBoard = 0, board.blackBoard = 0, board.allPieces = 0;
+  // uint64_t p = 0x0400;
+  // printBoard(toBinary(p));
+  // cout << endl << endl;
+  // uint64_t attacks = getPawnMoves(p, board, true);
+  // printBoard(toBinary(attacks));
+  vector<Move> moves = generateAllMoves(board, true);
 
-  uint64_t p = 0x8000000000; // ....0000 1000
-
-  printBoard(toBinary(p));
-  cout << endl;
-
-  uint64_t attacks = getKnightMoves(p, board, true);
-
-  string s = toBinary(attacks);
-
-  printBoard(s);
-
-  cout << endl << endl;
-
-  vector<int> moves = moveList(attacks);
-
-  for (auto it : moves)
-    cout << it << " ";
-
-  // cout<<getRank(p);
+  for (auto it : moves) {
+    cout << it.from << " " << it.to << " " << it.piece << " "
+         << it.capturedPiece << endl;
+  }
 
   return 0;
 }
