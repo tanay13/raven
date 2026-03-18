@@ -403,19 +403,132 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   return moves;
 }
 
-vector<int> moveList(uint64_t moves) {
+void updateBoard(Board &board) {
+  board.whiteBoard = board.whitePawns | board.whiteKnights |
+                     board.whiteBishops | board.whiteKing | board.whiteQueen |
+                     board.whiteRooks;
+  board.blackBoard = board.blackPawns | board.blackKnights |
+                     board.blackBishops | board.blackQueen | board.blackRooks |
+                     board.blackKing;
 
-  uint64_t init = 0x0100000000000000ULL;
-  vector<int> moveList;
-  for (int i = 1; i < 64; i++) {
-    if (init & moves) {
-      int sq = 64 - __builtin_ctzll(init);
-      moveList.push_back(sq);
+  board.allPieces = board.whiteBoard | board.blackBoard;
+}
+
+void makeMove(Board &board, Move &move, bool isWhite) {
+  uint64_t from = 1ULL << (move.from - 1);
+  uint64_t to = 1ULL << (move.to - 1);
+  PieceType piece = move.piece;
+
+  if (isWhite) {
+    switch (piece) {
+    case PAWN:
+      board.whitePawns ^= from;
+      board.whitePawns |= to;
+      break;
+    case KNIGHT:
+      board.whiteKnights ^= from;
+      board.whiteKnights |= to;
+      break;
+    case BISHOP:
+      board.whiteBishops ^= from;
+      board.whiteBishops |= to;
+      break;
+    case ROOK:
+      board.whiteRooks ^= from;
+      board.whiteRooks |= to;
+      break;
+    case QUEEN:
+      board.whiteQueen ^= from;
+      board.whiteQueen |= to;
+      break;
+    case KING:
+      board.whiteKing ^= from;
+      board.whiteKing |= to;
+      break;
+    default:
+      break;
     }
-    init = init >> 1;
+  } else {
+    switch (piece) {
+    case PAWN:
+      board.blackPawns ^= from;
+      board.blackPawns |= to;
+      break;
+    case KNIGHT:
+      board.blackKnights ^= from;
+      board.blackKnights |= to;
+      break;
+    case BISHOP:
+      board.blackBishops ^= from;
+      board.blackBishops |= to;
+      break;
+    case ROOK:
+      board.blackRooks ^= from;
+      board.blackRooks |= to;
+      break;
+    case QUEEN:
+      board.blackQueen ^= from;
+      board.blackQueen |= to;
+      break;
+    case KING:
+      board.blackKing ^= from;
+      board.blackKing |= to;
+      break;
+    default:
+      break;
+    }
   }
 
-  return moveList;
+  if (move.capturedPiece != NONE) {
+    if (isWhite) {
+      switch (move.capturedPiece) {
+      case PAWN:
+        board.blackPawns ^= to;
+        break;
+      case KNIGHT:
+        board.blackKnights ^= to;
+        break;
+      case BISHOP:
+        board.blackBishops ^= to;
+        break;
+      case ROOK:
+        board.blackRooks ^= to;
+        break;
+      case QUEEN:
+        board.blackQueen ^= to;
+        break;
+      case KING:
+        board.blackKing ^= to;
+        break;
+      default:
+        break;
+      }
+    } else {
+      switch (move.capturedPiece) {
+      case PAWN:
+        board.whitePawns ^= to;
+        break;
+      case KNIGHT:
+        board.whiteKnights ^= to;
+        break;
+      case BISHOP:
+        board.whiteBishops ^= to;
+        break;
+      case ROOK:
+        board.whiteRooks ^= to;
+        break;
+      case QUEEN:
+        board.whiteQueen ^= to;
+        break;
+      case KING:
+        board.whiteKing ^= to;
+        break;
+      default:
+        break;
+      }
+    }
+  }
+  updateBoard(board);
 }
 
 int main() {
@@ -427,11 +540,11 @@ int main() {
   // cout << endl << endl;
   // uint64_t attacks = getPawnMoves(p, board, true);
   // printBoard(toBinary(attacks));
-  cout << toBinary(board.aFile) << endl;
-  printBoard(toBinary(board.aFile));
-  cout << endl;
+  printBoard(toBinary(board.whiteBoard));
   vector<Move> moves = generateAllMoves(board, true);
-
+  makeMove(board, moves[0], true);
+  cout << endl;
+  printBoard(toBinary(board.whiteBoard));
   // for (auto it : moves) {
   //   cout << it.from << " " << it.to << " " << it.piece << " "
   //        << it.capturedPiece << endl;
