@@ -70,37 +70,11 @@ string toBinary(uint64_t x) { return bitset<64>(x).to_string(); }
 
 void printBoard(string s) {
   for (int i = 0; i < 64; i += 8) {
-    for (int j = 0; j <= 7; j++) {
+    for (int j = 7; j >= 0; j--) {
       cout << s[i + j] << " ";
     }
     cout << endl;
   }
-}
-
-int getRank(uint64_t pos) {
-
-  uint64_t init = 0xFF; // 000....1111 1111
-
-  int rank = 1;
-
-  while ((init & pos) == 0) {
-    init = init << 8;
-    rank++;
-  }
-  return rank;
-}
-
-int getFile(uint64_t pos) {
-
-  uint64_t init = 0x0101010101010101; // 0000 0001 0000 0001
-
-  int file = 1;
-
-  while ((init & pos) == 0) {
-    init = init << 1;
-    file++;
-  }
-  return file;
 }
 
 uint64_t getRookMoves(uint64_t pos, Board &board, bool isWhite) {
@@ -307,7 +281,7 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   uint64_t king = isWhite ? board.whiteKing : board.blackKing;
 
   if (pawns) {
-    uint64_t init = 0x0800000000000000ULL;
+    uint64_t init = 0x8000000000000000ULL;
     for (int i = 0; i < 64; i++) {
       if (init & pawns) {
         uint64_t attacks = getPawnMoves(init, board, isWhite);
@@ -327,7 +301,7 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   }
 
   if (bishops) {
-    uint64_t init = 0x0800000000000000ULL;
+    uint64_t init = 0x8000000000000000ULL;
     for (int i = 0; i < 64; i++) {
       if (init & bishops) {
         uint64_t attacks = getBishopMoves(init, board, isWhite);
@@ -347,7 +321,7 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   }
 
   if (knights) {
-    uint64_t init = 0x0800000000000000ULL;
+    uint64_t init = 0x8000000000000000ULL;
     for (int i = 0; i < 64; i++) {
       if (init & knights) {
         uint64_t attacks = getKnightMoves(init, board, isWhite);
@@ -367,7 +341,7 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   }
 
   if (rooks) {
-    uint64_t init = 0x0800000000000000ULL;
+    uint64_t init = 0x8000000000000000ULL;
     for (int i = 0; i < 64; i++) {
       if (init & rooks) {
         uint64_t attacks = getRookMoves(init, board, isWhite);
@@ -387,7 +361,7 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   }
 
   if (queen) {
-    uint64_t init = 0x0800000000000000ULL;
+    uint64_t init = 0x8000000000000000ULL;
     for (int i = 0; i < 64; i++) {
       if (init & queen) {
         uint64_t attacks = getQueenMove(init, board, isWhite);
@@ -407,7 +381,7 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   }
 
   if (king) {
-    uint64_t init = 0x0800000000000000ULL;
+    uint64_t init = 0x8000000000000000ULL;
     for (int i = 0; i < 64; i++) {
       if (init & king) {
         uint64_t attacks = getKingMoves(init, board, isWhite);
@@ -453,12 +427,15 @@ int main() {
   // cout << endl << endl;
   // uint64_t attacks = getPawnMoves(p, board, true);
   // printBoard(toBinary(attacks));
+  cout << toBinary(board.aFile) << endl;
+  printBoard(toBinary(board.aFile));
+  cout << endl;
   vector<Move> moves = generateAllMoves(board, true);
 
-  for (auto it : moves) {
-    cout << it.from << " " << it.to << " " << it.piece << " "
-         << it.capturedPiece << endl;
-  }
+  // for (auto it : moves) {
+  //   cout << it.from << " " << it.to << " " << it.piece << " "
+  //        << it.capturedPiece << endl;
+  // }
 
   return 0;
 }
