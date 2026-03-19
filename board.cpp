@@ -11,9 +11,7 @@ void boardUpdate(Board &board) {
   board.allPieces = board.whiteBoard | board.blackBoard;
 }
 
-void updateBoard(Board &board) {
-  boardUpdate(board);
-}
+void updateBoard(Board &board) { boardUpdate(board); }
 
 bool isOccupied(uint64_t sq, Board &board) { return sq & board.allPieces; }
 
@@ -98,21 +96,27 @@ void makeMove(Board &board, Move &move, bool isWhite) {
       switch (move.capturedPiece) {
       case PAWN:
         board.blackPawns ^= to;
+        board.whiteScore += PiecePoint[PAWN];
         break;
       case KNIGHT:
         board.blackKnights ^= to;
+        board.whiteScore += PiecePoint[KNIGHT];
         break;
       case BISHOP:
         board.blackBishops ^= to;
+        board.whiteScore += PiecePoint[BISHOP];
         break;
       case ROOK:
         board.blackRooks ^= to;
+        board.whiteScore += PiecePoint[ROOK];
         break;
       case QUEEN:
         board.blackQueen ^= to;
+        board.whiteScore += PiecePoint[QUEEN];
         break;
       case KING:
         board.blackKing ^= to;
+        board.whiteScore += PiecePoint[KING];
         break;
       default:
         break;
@@ -121,21 +125,27 @@ void makeMove(Board &board, Move &move, bool isWhite) {
       switch (move.capturedPiece) {
       case PAWN:
         board.whitePawns ^= to;
+        board.blackScore += PiecePoint[PAWN];
         break;
       case KNIGHT:
         board.whiteKnights ^= to;
+        board.blackScore += PiecePoint[KNIGHT];
         break;
       case BISHOP:
         board.whiteBishops ^= to;
+        board.blackScore += PiecePoint[BISHOP];
         break;
       case ROOK:
         board.whiteRooks ^= to;
+        board.blackScore += PiecePoint[ROOK];
         break;
       case QUEEN:
         board.whiteQueen ^= to;
+        board.blackScore += PiecePoint[QUEEN];
         break;
       case KING:
         board.whiteKing ^= to;
+        board.blackScore += PiecePoint[KING];
         break;
       default:
         break;

@@ -49,6 +49,9 @@ struct Board {
                         blackRooks | blackKing;
 
   uint64_t allPieces = whiteBoard | blackBoard;
+
+  int whiteScore = 0;
+  int blackScore = 0;
 };
 
 void boardUpdate(Board &board);
