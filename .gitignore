@@ -38,6 +38,8 @@
 *.app
 main
 board
+raven_engine
 # debug information files
 *.dwo
 *.dSYM
+

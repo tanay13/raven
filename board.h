@@ -1,15 +1,19 @@
 #ifndef BOARD_H
 #define BOARD_H
 
+#include <bitset>
 #include <cstdint>
+#include <iostream>
+#include <map>
 #include <string>
 #include <vector>
-#include <bitset>
-#include <iostream>
 
 using namespace std;
 
 enum PieceType { NONE = 0, PAWN = 1, KNIGHT, BISHOP, ROOK, QUEEN, KING };
+
+map<PieceType, int> PiecePoint = {{PAWN, 1}, {KNIGHT, 3}, {BISHOP, 3},
+                                  {ROOK, 5}, {QUEEN, 9},  {KING, 0}};
 
 struct Move {
   int from;
@@ -33,7 +37,7 @@ struct Board {
   uint64_t blackQueen = 0x0800000000000000ULL;
   uint64_t blackKing = 0x1000000000000000ULL;
 
-  uint64_t aFile = 0x0101010101010101; 
+  uint64_t aFile = 0x0101010101010101;
   uint64_t bFile = 0x0202020202020202;
 
   uint64_t hfile = 0x8080808080808080;

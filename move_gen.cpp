@@ -171,8 +171,27 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
       uint64_t attacks = getMovesFunc(pos, board, isWhite);
       while (attacks) {
         uint64_t to = attacks & -attacks;
+        PieceType capturedPiece =
+            isOccupied(to, board)
+                ? (isWhite ? (board.blackBoard & to
+                                  ? (board.blackPawns & to     ? PAWN
+                                     : board.blackKnights & to ? KNIGHT
+                                     : board.blackBishops & to ? BISHOP
+                                     : board.blackRooks & to   ? ROOK
+                                     : board.blackQueen & to   ? QUEEN
+                                                               : KING)
+                                  : NONE)
+                           : (board.whiteBoard & to
+                                  ? (board.whitePawns & to     ? PAWN
+                                     : board.whiteKnights & to ? KNIGHT
+                                     : board.whiteBishops & to ? BISHOP
+                                     : board.whiteRooks & to   ? ROOK
+                                     : board.whiteQueen & to   ? QUEEN
+                                                               : KING)
+                                  : NONE))
+                : NONE;
         moves.push_back({(int)__builtin_ctzll(pos) + 1,
-                         (int)__builtin_ctzll(to) + 1, type, NONE});
+                         (int)__builtin_ctzll(to) + 1, type, capturedPiece});
         attacks &= attacks - 1;
       }
       pieces &= pieces - 1;
