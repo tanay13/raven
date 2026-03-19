@@ -1,5 +1,10 @@
 #include "board.h"
 
+using namespace std;
+
+std::map<PieceType, int> PiecePoint = {{PAWN, 1}, {KNIGHT, 3}, {BISHOP, 3},
+                                       {ROOK, 5}, {QUEEN, 9},  {KING, 10000}};
+
 void boardUpdate(Board &board) {
   board.whiteBoard = board.whitePawns | board.whiteKnights |
                      board.whiteBishops | board.whiteQueen | board.whiteRooks |

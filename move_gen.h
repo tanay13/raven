@@ -9,7 +9,7 @@ uint64_t getPawnMoves(uint64_t pos, Board &board, bool isWhite);
 uint64_t getKingMoves(uint64_t pos, Board board, bool isWhite);
 uint64_t getBishopMoves(uint64_t pos, Board &board, bool isWhite);
 uint64_t getQueenMove(uint64_t pos, Board &board, bool isWhite);
-vector<Move> generateAllMoves(Board &board, bool isWhite);
+std::vector<Move> generateAllMoves(Board &board, bool isWhite);
 bool isKingInCheck(Board &board, bool isWhite);
 
 #endif // MOVE_GEN_H

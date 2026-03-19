@@ -8,12 +8,9 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 enum PieceType { NONE = 0, PAWN = 1, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 
-map<PieceType, int> PiecePoint = {{PAWN, 1}, {KNIGHT, 3}, {BISHOP, 3},
-                                  {ROOK, 5}, {QUEEN, 9},  {KING, 0}};
+extern std::map<PieceType, int> PiecePoint;
 
 struct Move {
   int from;
@@ -57,8 +54,8 @@ struct Board {
 void boardUpdate(Board &board);
 void updateBoard(Board &board);
 bool isOccupied(uint64_t sq, Board &board);
-string toBinary(uint64_t x);
-void printBoard(string s);
+std::string toBinary(uint64_t x);
+void printBoard(std::string s);
 void makeMove(Board &board, Move &move, bool isWhite);
 
 #endif // BOARD_H

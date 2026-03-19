@@ -1,5 +1,7 @@
 #include "move_gen.h"
 
+using namespace std;
+
 int main() {
   /*Initialize the board*/
   Board board;

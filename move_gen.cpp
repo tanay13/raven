@@ -1,6 +1,8 @@
 #include "move_gen.h"
 #include <algorithm>
 
+using namespace std;
+
 uint64_t getKnightMoves(uint64_t POS, Board &board, bool isWhite) {
   uint64_t abFile = board.aFile | board.bFile;
   uint64_t ghFile = board.gfile | board.hfile;
