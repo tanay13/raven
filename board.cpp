@@ -403,6 +403,49 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
   return moves;
 }
 
+bool isKingInCheck(Board &board, bool isWhite) {
+  uint64_t kingPos = isWhite ? board.whiteKing : board.blackKing;
+  uint64_t attackedSqrs = 0ULL;
+  bool oppColor = !isWhite;
+
+  uint64_t oppPawns = isWhite ? board.blackPawns : board.whitePawns;
+  uint64_t oppKnights = isWhite ? board.blackKnights : board.whiteKnights;
+  uint64_t oppBishops = isWhite ? board.blackBishops : board.whiteBishops;
+  uint64_t oppRooks = isWhite ? board.blackRooks : board.whiteRooks;
+  uint64_t oppQueen = isWhite ? board.blackQueen : board.whiteQueen;
+  uint64_t oppKing = isWhite ? board.blackKing : board.whiteKing;
+
+  if (isWhite)
+    attackedSqrs |=
+        ((oppPawns >> 7) & ~board.aFile) | ((oppPawns >> 9) & ~board.hfile);
+  else
+    attackedSqrs |=
+        ((oppPawns << 7) & ~board.hfile) | ((oppPawns << 9) & ~board.aFile);
+
+  while (oppKnights) {
+    uint64_t sq = oppKnights & -oppKnights;
+    attackedSqrs |= getKnightMoves(sq, board, oppColor);
+    oppKnights &= oppKnights - 1;
+  }
+
+  while (oppBishops) {
+    uint64_t sq = oppBishops & -oppBishops;
+    attackedSqrs |= getBishopMoves(sq, board, oppColor);
+    oppBishops &= oppBishops - 1;
+  }
+
+  while (oppRooks) {
+    uint64_t sq = oppRooks & -oppRooks;
+    attackedSqrs |= getRookMoves(sq, board, oppColor);
+    oppRooks &= oppRooks - 1;
+  }
+
+  attackedSqrs |= getQueenMove(oppQueen, board, oppColor);
+  attackedSqrs |= getKingMoves(oppKing, board, oppColor);
+
+  return attackedSqrs & kingPos;
+}
+
 void updateBoard(Board &board) {
   board.whiteBoard = board.whitePawns | board.whiteKnights |
                      board.whiteBishops | board.whiteKing | board.whiteQueen |
@@ -535,16 +578,22 @@ int main() {
 
   /*Initialize the board*/
   Board board;
-  // uint64_t p = 0x0400;
-  // printBoard(toBinary(p));
-  // cout << endl << endl;
-  // uint64_t attacks = getPawnMoves(p, board, true);
+  // board.blackRooks = 0x0000100000000000;
+  // board.whitePawns = 0;
+  // board.blackPawns = 0;
+  // updateBoard(board);
+  // printBoard(toBinary(board.blackRooks));
+  // cout << endl;
+  // uint64_t attacks = getRookMoves(board.blackRooks, board, false);
   // printBoard(toBinary(attacks));
-  printBoard(toBinary(board.whiteBoard));
-  vector<Move> moves = generateAllMoves(board, true);
-  makeMove(board, moves[0], true);
-  cout << endl;
-  printBoard(toBinary(board.whiteBoard));
+  // cout << endl;
+  // cout << isKingInCheck(board, true);
+  // cout << endl;
+  // printBoard(toBinary(board.whiteKing));
+  // vector<Move> moves = generateAllMoves(board, true);
+  // makeMove(board, moves[0], true);
+  // cout << endl;
+  // printBoard(toBinary(board.whiteBoard));
   // for (auto it : moves) {
   //   cout << it.from << " " << it.to << " " << it.piece << " "
   //        << it.capturedPiece << endl;
