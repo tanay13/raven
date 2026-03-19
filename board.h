@@ -46,16 +46,17 @@ struct Board {
                         blackRooks | blackKing;
 
   uint64_t allPieces = whiteBoard | blackBoard;
-
-  int whiteScore = 0;
-  int blackScore = 0;
 };
 
 void boardUpdate(Board &board);
 void updateBoard(Board &board);
 bool isOccupied(uint64_t sq, Board &board);
+int evaluate(Board &board);
 std::string toBinary(uint64_t x);
 void printBoard(std::string s);
 void makeMove(Board &board, Move &move, bool isWhite);
+void unMakeMove(Board &board, Move &move, bool isWhite);
+std::string moveToUCI(Move move);
+std::string moveToSAN(Board &board, Move move, bool isWhite);
 
 #endif // BOARD_H

@@ -192,8 +192,18 @@ vector<Move> generateAllMoves(Board &board, bool isWhite) {
                                                                : KING)
                                   : NONE))
                 : NONE;
-        moves.push_back({(int)__builtin_ctzll(pos) + 1,
-                         (int)__builtin_ctzll(to) + 1, type, capturedPiece});
+        Move currentMove = {(int)__builtin_ctzll(pos) + 1,
+                            (int)__builtin_ctzll(to) + 1, type, capturedPiece};
+
+        // copy the board to a temp board and make the move..
+        // then check if that move leaves the king in check or not.
+        // if it does not leave the king in check then add it to the moves list.
+        Board tempBoard = board;
+        makeMove(tempBoard, currentMove, isWhite);
+
+        if (!isKingInCheck(tempBoard, isWhite)) {
+          moves.push_back(currentMove);
+        }
         attacks &= attacks - 1;
       }
       pieces &= pieces - 1;
