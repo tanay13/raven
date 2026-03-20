@@ -90,72 +90,312 @@ void printBoard(string s) {
   }
 }
 
-void unMakeMove(Board &board, Move &move, bool isWhite) {
+void makeMove(Board &board, Move &move, bool isWhite) {
+  move.prevCastlingRights = board.castlingRights;
+  move.prevEnPassantSq = board.enPassantSq;
+
   uint64_t from = 1ULL << (move.from - 1);
   uint64_t to = 1ULL << (move.to - 1);
-  PieceType piece = move.piece;
+  uint64_t fromTo = from | to;
 
-  if (isWhite) {
-    switch (piece) {
-    case PAWN:
-      board.whitePawns ^= to;
-      board.whitePawns |= from;
-      break;
-    case KNIGHT:
-      board.whiteKnights ^= to;
-      board.whiteKnights |= from;
-      break;
-    case BISHOP:
-      board.whiteBishops ^= to;
-      board.whiteBishops |= from;
-      break;
-    case ROOK:
-      board.whiteRooks ^= to;
-      board.whiteRooks |= from;
-      break;
-    case QUEEN:
-      board.whiteQueen ^= to;
-      board.whiteQueen |= from;
-      break;
-    case KING:
-      board.whiteKing ^= to;
-      board.whiteKing |= from;
-      break;
-    default:
-      break;
-    }
-  } else {
-    switch (piece) {
-    case PAWN:
-      board.blackPawns ^= to;
-      board.blackPawns |= from;
-      break;
-    case KNIGHT:
-      board.blackKnights ^= to;
-      board.blackKnights |= from;
-      break;
-    case BISHOP:
-      board.blackBishops ^= to;
-      board.blackBishops |= from;
-      break;
-    case ROOK:
-      board.blackRooks ^= to;
-      board.blackRooks |= from;
-      break;
-    case QUEEN:
-      board.blackQueen ^= to;
-      board.blackQueen |= from;
-      break;
-    case KING:
-      board.blackKing ^= to;
-      board.blackKing |= from;
-      break;
-    default:
-      break;
+  // Handle captures
+  if (move.isEnPassant) {
+    uint64_t capSq = isWhite ? (to >> 8) : (to << 8);
+    if (isWhite)
+      board.blackPawns ^= capSq;
+    else
+      board.whitePawns ^= capSq;
+  } else if (move.capturedPiece != NONE) {
+    if (isWhite) {
+      if (to & board.blackPawns)
+        board.blackPawns ^= to;
+      else if (to & board.blackKnights)
+        board.blackKnights ^= to;
+      else if (to & board.blackBishops)
+        board.blackBishops ^= to;
+      else if (to & board.blackRooks)
+        board.blackRooks ^= to;
+      else if (to & board.blackQueen)
+        board.blackQueen ^= to;
+      else if (to & board.blackKing)
+        board.blackKing ^= to;
+    } else {
+      if (to & board.whitePawns)
+        board.whitePawns ^= to;
+      else if (to & board.whiteKnights)
+        board.whiteKnights ^= to;
+      else if (to & board.whiteBishops)
+        board.whiteBishops ^= to;
+      else if (to & board.whiteRooks)
+        board.whiteRooks ^= to;
+      else if (to & board.whiteQueen)
+        board.whiteQueen ^= to;
+      else if (to & board.whiteKing)
+        board.whiteKing ^= to;
     }
   }
 
-  if (move.capturedPiece != NONE) {
+  // Handle move
+  PieceType p = move.piece;
+  if (move.promotionPiece != NONE)
+    p = move.promotionPiece;
+
+  if (isWhite) {
+    switch (move.piece) {
+    case PAWN:
+      board.whitePawns ^= from;
+      if (move.promotionPiece == NONE)
+        board.whitePawns |= to;
+      break;
+    case KNIGHT:
+      board.whiteKnights ^= fromTo;
+      break;
+    case BISHOP:
+      board.whiteBishops ^= fromTo;
+      break;
+    case ROOK:
+      board.whiteRooks ^= fromTo;
+      break;
+    case QUEEN:
+      board.whiteQueen ^= fromTo;
+      break;
+    case KING:
+      board.whiteKing ^= fromTo;
+      break;
+    default:
+      break;
+    }
+    if (move.promotionPiece != NONE) {
+      switch (move.promotionPiece) {
+      case KNIGHT:
+        board.whiteKnights |= to;
+        break;
+      case BISHOP:
+        board.whiteBishops |= to;
+        break;
+      case ROOK:
+        board.whiteRooks |= to;
+        break;
+      case QUEEN:
+        board.whiteQueen |= to;
+        break;
+      default:
+        break;
+      }
+    }
+  } else {
+    switch (move.piece) {
+    case PAWN:
+      board.blackPawns ^= from;
+      if (move.promotionPiece == NONE)
+        board.blackPawns |= to;
+      break;
+    case KNIGHT:
+      board.blackKnights ^= fromTo;
+      break;
+    case BISHOP:
+      board.blackBishops ^= fromTo;
+      break;
+    case ROOK:
+      board.blackRooks ^= fromTo;
+      break;
+    case QUEEN:
+      board.blackQueen ^= fromTo;
+      break;
+    case KING:
+      board.blackKing ^= fromTo;
+      break;
+    default:
+      break;
+    }
+    if (move.promotionPiece != NONE) {
+      switch (move.promotionPiece) {
+      case KNIGHT:
+        board.blackKnights |= to;
+        break;
+      case BISHOP:
+        board.blackBishops |= to;
+        break;
+      case ROOK:
+        board.blackRooks |= to;
+        break;
+      case QUEEN:
+        board.blackQueen |= to;
+        break;
+      default:
+        break;
+      }
+    }
+  }
+
+  // Handle castling
+  // move.to == 3 means c1, move.to == 7 means g1, move.to == 59 means c8,
+  // move.to == 63 means g8 this means that we are moving the king to c1, g1,
+  // c8, or g8 and the rook is moving to the square next to the king
+  if (move.isCastling) {
+    if (isWhite) {
+      if (move.to == 7) {
+        board.whiteRooks ^= (1ULL << 7) | (1ULL << 5);
+      } // g1
+      else if (move.to == 3) {
+        board.whiteRooks ^= (1ULL << 0) | (1ULL << 3);
+      } // c1
+    } else {
+      if (move.to == 63) {
+        board.blackRooks ^= (1ULL << 63) | (1ULL << 61);
+      } // g8
+      else if (move.to == 59) {
+        board.blackRooks ^= (1ULL << 56) | (1ULL << 59);
+      } // c8
+    }
+  }
+
+  // Update enPassantSq
+  board.enPassantSq = -1;
+  if (move.piece == PAWN) {
+    if (abs(move.from - move.to) == 16) {
+      board.enPassantSq = isWhite ? (move.from + 7) : (move.from - 9);
+    }
+  }
+
+  // Update castlingRights
+
+  if (move.piece == KING) {
+    if (isWhite)
+      board.castlingRights &= ~3;
+    else
+      board.castlingRights &= ~12;
+  }
+  if (move.piece == ROOK) {
+    if (isWhite) {
+      if (move.from == 1)
+        board.castlingRights &= ~2;
+      else if (move.from == 8)
+        board.castlingRights &= ~1;
+    } else {
+      if (move.from == 57)
+        board.castlingRights &= ~8;
+      else if (move.from == 64)
+        board.castlingRights &= ~4;
+    }
+  }
+  // Rook being captured
+  if (move.capturedPiece == ROOK) {
+    if (move.to == 8)
+      board.castlingRights &= ~1;
+    else if (move.to == 1)
+      board.castlingRights &= ~2;
+    else if (move.to == 64)
+      board.castlingRights &= ~4;
+    else if (move.to == 57)
+      board.castlingRights &= ~8;
+  }
+
+  updateBoard(board);
+}
+
+void unMakeMove(Board &board, Move &move, bool isWhite) {
+  uint64_t from = 1ULL << (move.from - 1);
+  uint64_t to = 1ULL << (move.to - 1);
+  uint64_t fromTo = from | to;
+
+  // Move the pieces back
+  if (isWhite) {
+    if (move.promotionPiece != NONE) {
+      board.whitePawns |= from;
+      switch (move.promotionPiece) {
+      case KNIGHT:
+        board.whiteKnights ^= to;
+        break;
+      case BISHOP:
+        board.whiteBishops ^= to;
+        break;
+      case ROOK:
+        board.whiteRooks ^= to;
+        break;
+      case QUEEN:
+        board.whiteQueen ^= to;
+        break;
+      default:
+        break;
+      }
+    } else {
+      switch (move.piece) {
+      case PAWN:
+        board.whitePawns ^= fromTo;
+        break;
+      case KNIGHT:
+        board.whiteKnights ^= fromTo;
+        break;
+      case BISHOP:
+        board.whiteBishops ^= fromTo;
+        break;
+      case ROOK:
+        board.whiteRooks ^= fromTo;
+        break;
+      case QUEEN:
+        board.whiteQueen ^= fromTo;
+        break;
+      case KING:
+        board.whiteKing ^= fromTo;
+        break;
+      default:
+        break;
+      }
+    }
+  } else {
+    if (move.promotionPiece != NONE) {
+      board.blackPawns |= from;
+      switch (move.promotionPiece) {
+      case KNIGHT:
+        board.blackKnights ^= to;
+        break;
+      case BISHOP:
+        board.blackBishops ^= to;
+        break;
+      case ROOK:
+        board.blackRooks ^= to;
+        break;
+      case QUEEN:
+        board.blackQueen ^= to;
+        break;
+      default:
+        break;
+      }
+    } else {
+      switch (move.piece) {
+      case PAWN:
+        board.blackPawns ^= fromTo;
+        break;
+      case KNIGHT:
+        board.blackKnights ^= fromTo;
+        break;
+      case BISHOP:
+        board.blackBishops ^= fromTo;
+        break;
+      case ROOK:
+        board.blackRooks ^= fromTo;
+        break;
+      case QUEEN:
+        board.blackQueen ^= fromTo;
+        break;
+      case KING:
+        board.blackKing ^= fromTo;
+        break;
+      default:
+        break;
+      }
+    }
+  }
+
+  // Restore captured pieces
+  if (move.isEnPassant) {
+    uint64_t capSq = isWhite ? (to >> 8) : (to << 8);
+    if (isWhite)
+      board.blackPawns |= capSq;
+    else
+      board.whitePawns |= capSq;
+  } else if (move.capturedPiece != NONE) {
     if (isWhite) {
       switch (move.capturedPiece) {
       case PAWN:
@@ -204,123 +444,30 @@ void unMakeMove(Board &board, Move &move, bool isWhite) {
       }
     }
   }
-  updateBoard(board);
-}
 
-void makeMove(Board &board, Move &move, bool isWhite) {
-  uint64_t from = 1ULL << (move.from - 1);
-  uint64_t to = 1ULL << (move.to - 1);
-  PieceType piece = move.piece;
-
-  if (isWhite) {
-    switch (piece) {
-    case PAWN:
-      board.whitePawns ^= from;
-      board.whitePawns |= to;
-      break;
-    case KNIGHT:
-      board.whiteKnights ^= from;
-      board.whiteKnights |= to;
-      break;
-    case BISHOP:
-      board.whiteBishops ^= from;
-      board.whiteBishops |= to;
-      break;
-    case ROOK:
-      board.whiteRooks ^= from;
-      board.whiteRooks |= to;
-      break;
-    case QUEEN:
-      board.whiteQueen ^= from;
-      board.whiteQueen |= to;
-      break;
-    case KING:
-      board.whiteKing ^= from;
-      board.whiteKing |= to;
-      break;
-    default:
-      break;
-    }
-  } else {
-    switch (piece) {
-    case PAWN:
-      board.blackPawns ^= from;
-      board.blackPawns |= to;
-      break;
-    case KNIGHT:
-      board.blackKnights ^= from;
-      board.blackKnights |= to;
-      break;
-    case BISHOP:
-      board.blackBishops ^= from;
-      board.blackBishops |= to;
-      break;
-    case ROOK:
-      board.blackRooks ^= from;
-      board.blackRooks |= to;
-      break;
-    case QUEEN:
-      board.blackQueen ^= from;
-      board.blackQueen |= to;
-      break;
-    case KING:
-      board.blackKing ^= from;
-      board.blackKing |= to;
-      break;
-    default:
-      break;
-    }
-  }
-
-  if (move.capturedPiece != NONE) {
+  // Undo castling rook move
+  if (move.isCastling) {
     if (isWhite) {
-      switch (move.capturedPiece) {
-      case PAWN:
-        board.blackPawns ^= to;
-        break;
-      case KNIGHT:
-        board.blackKnights ^= to;
-        break;
-      case BISHOP:
-        board.blackBishops ^= to;
-        break;
-      case ROOK:
-        board.blackRooks ^= to;
-        break;
-      case QUEEN:
-        board.blackQueen ^= to;
-        break;
-      case KING:
-        board.blackKing ^= to;
-        break;
-      default:
-        break;
-      }
+      if (move.to == 7) {
+        board.whiteRooks ^= (1ULL << 7) | (1ULL << 5);
+      } // g1
+      else if (move.to == 3) {
+        board.whiteRooks ^= (1ULL << 0) | (1ULL << 3);
+      } // c1
     } else {
-      switch (move.capturedPiece) {
-      case PAWN:
-        board.whitePawns ^= to;
-        break;
-      case KNIGHT:
-        board.whiteKnights ^= to;
-        break;
-      case BISHOP:
-        board.whiteBishops ^= to;
-        break;
-      case ROOK:
-        board.whiteRooks ^= to;
-        break;
-      case QUEEN:
-        board.whiteQueen ^= to;
-        break;
-      case KING:
-        board.whiteKing ^= to;
-        break;
-      default:
-        break;
-      }
+      if (move.to == 63) {
+        board.blackRooks ^= (1ULL << 63) | (1ULL << 61);
+      } // g8
+      else if (move.to == 59) {
+        board.blackRooks ^= (1ULL << 56) | (1ULL << 59);
+      } // c8
     }
   }
+
+  // Restore state
+  board.castlingRights = move.prevCastlingRights;
+  board.enPassantSq = move.prevEnPassantSq;
+
   updateBoard(board);
 }
 
@@ -338,6 +485,26 @@ string moveToUCI(Move move) {
   res += fromRank;
   res += toFile;
   res += toRank;
+
+  if (move.promotionPiece != NONE) {
+    switch (move.promotionPiece) {
+    case KNIGHT:
+      res += 'n';
+      break;
+    case BISHOP:
+      res += 'b';
+      break;
+    case ROOK:
+      res += 'r';
+      break;
+    case QUEEN:
+      res += 'q';
+      break;
+    default:
+      break;
+    }
+  }
+
   return res;
 }
 
@@ -415,6 +582,8 @@ void resetBoard(Board &board) {
   board.blackQueen = 0;
   board.blackKing = 0;
   board.whiteToMove = true;
+  board.enPassantSq = -1;
+  board.castlingRights = 0;
   updateBoard(board);
 }
 
@@ -476,6 +645,31 @@ void loadFEN(Board &board, string fen) {
     }
   }
   board.whiteToMove = (turn == "w");
+
+  // Castling rights
+  board.castlingRights = 0;
+  if (castling != "-") {
+    for (char c : castling) {
+      if (c == 'K')
+        board.castlingRights |= 1;
+      else if (c == 'Q')
+        board.castlingRights |= 2;
+      else if (c == 'k')
+        board.castlingRights |= 4;
+      else if (c == 'q')
+        board.castlingRights |= 8;
+    }
+  }
+
+  // En passant square
+  if (ep != "-") {
+    int f = ep[0] - 'a';
+    int r = ep[1] - '1';
+    board.enPassantSq = r * 8 + f;
+  } else {
+    board.enPassantSq = -1;
+  }
+
   updateBoard(board);
 }
 

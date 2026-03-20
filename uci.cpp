@@ -79,11 +79,17 @@ void uciLoop() {
           ss >> movestogo;
         }
       }
-
+      // wtime - how much time i have left
+      // winc - how much time i get per move
+      // movestogo - how many moves left
       string bestMove;
       if (useTime && !depthSpecified) {
         int myTime = board.whiteToMove ? wtime : btime;
         int myInc = board.whiteToMove ? winc : binc;
+
+        // timeLimitMs = (time left / moves left) + (increment / 2)
+        // this is a rough estimate of how much time we should spend on each
+        // move if timeLimitMs is less than 0ms, we will spend 50ms on each move
 
         int timeLimitMs = (myTime / movestogo) + (myInc / 2);
         if (timeLimitMs <= 0)

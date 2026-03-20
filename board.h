@@ -17,6 +17,11 @@ struct Move {
   int to;
   PieceType piece;
   PieceType capturedPiece;
+  PieceType promotionPiece = NONE;
+  bool isCastling = false;
+  bool isEnPassant = false;
+  int prevEnPassantSq = -1;
+  uint8_t prevCastlingRights = 0;
 };
 
 struct Board {
@@ -47,6 +52,12 @@ struct Board {
 
   uint64_t allPieces = whiteBoard | blackBoard;
   bool whiteToMove = true;
+  int enPassantSq = -1; // 0-63, -1 for none
+  uint8_t castlingRights =
+      0xF; // Bitmask: 1:K, 2:Q, 4:k, 8:q. castlingRights is defined using 4
+           // bits where each bit represents a castling right.
+  // 1: white king side, 2: white queen side, 4: black king side, 8: black queen
+  // side
 };
 
 void boardUpdate(Board &board);
