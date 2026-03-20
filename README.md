@@ -30,7 +30,7 @@ Raven is a clean, efficient C++ chess engine built from scratch. It uses **bitbo
 You can compile the project using a standard C++ compiler. To build the main test executable:
 
 ```bash
-g++ -std=c++11 main.cpp board.cpp move_gen.cpp -o raven
+g++ -std=c++17 main.cpp board.cpp move_gen.cpp uci.cpp engine.cpp -o raven
 ```
 *(Note: If you are using features that require C++17, use `-std=c++17`)*
 

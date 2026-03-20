@@ -1,5 +1,6 @@
 #include "board.h"
 #include "move_gen.h"
+#include <sstream>
 
 using namespace std;
 
@@ -398,4 +399,92 @@ string moveToSAN(Board &board, Move move, bool isWhite) {
   }
 
   return res;
+}
+
+void resetBoard(Board &board) {
+  board.whitePawns = 0;
+  board.whiteKnights = 0;
+  board.whiteBishops = 0;
+  board.whiteRooks = 0;
+  board.whiteQueen = 0;
+  board.whiteKing = 0;
+  board.blackPawns = 0;
+  board.blackKnights = 0;
+  board.blackBishops = 0;
+  board.blackRooks = 0;
+  board.blackQueen = 0;
+  board.blackKing = 0;
+  board.whiteToMove = true;
+  updateBoard(board);
+}
+
+void loadFEN(Board &board, string fen) {
+  resetBoard(board);
+  stringstream ss(fen);
+  string pieces, turn, castling, ep, halfmove, fullmove;
+  ss >> pieces >> turn >> castling >> ep >> halfmove >> fullmove;
+
+  int rank = 7, file = 0;
+  for (char c : pieces) {
+    if (c == '/') {
+      rank--;
+      file = 0;
+    } else if (isdigit(c)) {
+      file += c - '0';
+    } else {
+      int sq = rank * 8 + file;
+      uint64_t bit = 1ULL << sq;
+      switch (c) {
+      case 'P':
+        board.whitePawns |= bit;
+        break;
+      case 'N':
+        board.whiteKnights |= bit;
+        break;
+      case 'B':
+        board.whiteBishops |= bit;
+        break;
+      case 'R':
+        board.whiteRooks |= bit;
+        break;
+      case 'Q':
+        board.whiteQueen |= bit;
+        break;
+      case 'K':
+        board.whiteKing |= bit;
+        break;
+      case 'p':
+        board.blackPawns |= bit;
+        break;
+      case 'n':
+        board.blackKnights |= bit;
+        break;
+      case 'b':
+        board.blackBishops |= bit;
+        break;
+      case 'r':
+        board.blackRooks |= bit;
+        break;
+      case 'q':
+        board.blackQueen |= bit;
+        break;
+      case 'k':
+        board.blackKing |= bit;
+        break;
+      }
+      file++;
+    }
+  }
+  board.whiteToMove = (turn == "w");
+  updateBoard(board);
+}
+
+Move parseMove(Board &board, string moveStr, bool isWhite) {
+  vector<Move> legalMoves = generateAllMoves(board, isWhite);
+  for (Move &m : legalMoves) {
+    if (moveToUCI(m) == moveStr) {
+      return m;
+    }
+  }
+  return {0, 0, NONE, NONE};
 }

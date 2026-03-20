@@ -46,6 +46,7 @@ struct Board {
                         blackRooks | blackKing;
 
   uint64_t allPieces = whiteBoard | blackBoard;
+  bool whiteToMove = true;
 };
 
 void boardUpdate(Board &board);
@@ -58,5 +59,9 @@ void makeMove(Board &board, Move &move, bool isWhite);
 void unMakeMove(Board &board, Move &move, bool isWhite);
 std::string moveToUCI(Move move);
 std::string moveToSAN(Board &board, Move move, bool isWhite);
+
+void loadFEN(Board &board, std::string fen);
+void resetBoard(Board &board);
+Move parseMove(Board &board, std::string moveStr, bool isWhite);
 
 #endif // BOARD_H

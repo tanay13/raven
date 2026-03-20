@@ -1,13 +1,6 @@
-#include "engine.h"
-#include "move_gen.h"
-
-using namespace std;
+#include "uci.h"
 
 int main() {
-  /*Initialize the board*/
-  Board board;
-
-  cout << findBestMove(board, 7, true) << endl;
-
+  uciLoop();
   return 0;
 }

@@ -39,6 +39,7 @@
 main
 board
 raven_engine
+raven
 # debug information files
 *.dwo
 *.dSYM
