@@ -1,40 +1,57 @@
 # Raven
 
-Raven is a clean, efficient C++ chess engine built from scratch. It uses **bitboard representation** for high-performance move generation and board state management.
+Raven is a clean, efficient C++ chess engine built from scratch. It uses a **bitboard representation** for high-performance move generation and board state management, and supports the standard **Universal Chess Interface (UCI)** protocol.
 
-## 🚀 Version 1 Features
+## 🚀 Key Features
 
-- **Bitboard Engine**: All pieces (pawns, knights, bishops, rooks, queens, and kings) are represented by 64-bit integers (`uint64_t`), allowing for fast bitwise operations.
-- **Move Generation**: Fully functional move generation for all piece types, including:
-  - Knight, Bishop, Rook, Queen, and King move generation.
-  - Pawn logic (single/double push and capture logic).
-  - Sliding piece generation using optimized loops.
-- **Legal Move Validation**: Detection of king check states.
-- **Board Management**: Functions for applying moves to the board and tracking scores based on captures.
-- **Evaluation Utilities**: Support for piece value mapping (PAWN=1, KNIGHT/BISHOP=3, ROOK=5, QUEEN=9).
-- **Visualization Tools**: Utilities to print binary representations of bitboards to the console for easier debugging.
+- **Bitboard Engine**: High-performance 64-bit representation for all pieces, enabling fast bitwise move generation.
+- **Full Chess Rules**: Supports all legal moves, including:
+  - **Castling** (Kingside and Queenside).
+  - **En Passant** captures.
+  - **Pawn Promotion** (to Queen, Rook, Bishop, or Knight).
+- **Search & Optimization**:
+  - **Alpha-Beta Pruning**: Efficiently narrows the search tree.
+  - **Iterative Deepening**: Ensures a best move is always ready when time runs out.
+  - **Time Management**: Standard UCI time control support (`wtime`, `btime`, `winc`, `binc`).
+- **UCI Protocol**: Fully compatible with chess GUIs like Cute Chess, Arena, or Stockfish GUI.
+- **Position Support**: Can load games from any state using **FEN** strings.
 
 ## 📁 Source Overview
 
-- `board.h/cpp`: Core board representation, piece types, bitboard management, and move application.
-- `move_gen.h/cpp`: The move generator implementation, including path calculation and check detection.
-- `main.cpp`: Entry point for testing and running the engine.
+- `board.h/cpp`: Core board representation, bitboard management, and move application logic.
+- `move_gen.h/cpp`: Comprehensive move generator including check detection and legal move validation.
+- `engine.h/cpp`: The search brain, implementing Minimax with Alpha-Beta and Iterative Deepening.
+- `uci.h/cpp`: Communication layer for the UCI protocol.
+- `main.cpp`: Entry point that launches the UCI loop.
 
 ## 🛠️ Getting Started
 
 ### Prerequisites
 - A C++ compiler (GCC or Clang recommended).
-- Support for C++11 or higher (C++17 recommended).
+- C++17 support.
 
 ### Compilation
-You can compile the project using a standard C++ compiler. To build the main test executable:
+To build Raven, run:
 
 ```bash
 g++ -std=c++17 main.cpp board.cpp move_gen.cpp uci.cpp engine.cpp -o raven
 ```
-*(Note: If you are using features that require C++17, use `-std=c++17`)*
 
-## 📈 Next Steps
-- Implement Alpha-Beta pruning for search optimization.
-- Add support for Zobrist hashing.
-- UCI (Universal Chess Interface) protocol support.
+### Usage
+Once compiled, you can run the engine directly (`./raven`) and type UCI commands, or plug the executable into your favorite Chess GUI.
+
+Example manual commands:
+```text
+uci
+isready
+position startpos moves e2e4
+go depth 6
+```
+
+## 📈 Roadmap (Future Improvements)
+
+- [ ] **Zobrist Hashing**: To support Transposition Tables.
+- [ ] **Transposition Tables**: To avoid redundant move calculations.
+- [ ] **Quiescence Search**: To improve evaluation stability by searching captures until quiet positions are reached.
+- [ ] **Move Ordering**: Heuristics like MVV-LVA or Killer Heuristic to speed up Alpha-Beta pruning.
+- [ ] **Advanced PST**: More refined Piece-Square Tables for better positional understanding.
