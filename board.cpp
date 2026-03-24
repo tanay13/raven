@@ -15,19 +15,18 @@ uint64_t enPassantKeys[8];
 
 void initZobrist() {
   std::mt19937_64 rng(123456789ULL);
-  std::uniform_int_distribution<uint64_t> dist(0, 0xFFFFFFFFFFFFFFFFULL);
 
   for (int i = 0; i < 12; i++) {
     for (int j = 0; j < 64; j++) {
-      pieceKeys[i][j] = dist(rng);
+      pieceKeys[i][j] = rng();
     }
   }
-  sideKey = dist(rng);
+  sideKey = rng();
   for (int i = 0; i < 16; i++) {
-    castlingKeys[i] = dist(rng);
+    castlingKeys[i] = rng();
   }
   for (int i = 0; i < 8; i++) {
-    enPassantKeys[i] = dist(rng);
+    enPassantKeys[i] = rng();
   }
 }
 
