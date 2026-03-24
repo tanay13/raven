@@ -24,6 +24,7 @@ void uciLoop() {
     } else if (cmd == "isready") {
       cout << "readyok" << endl;
     } else if (cmd == "ucinewgame") {
+      clearTT();
       loadFEN(board,
               "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
     } else if (cmd == "position") {
@@ -50,7 +51,6 @@ void uciLoop() {
           Move m = parseMove(board, moveStr, board.whiteToMove);
           if (m.from != 0) {
             makeMove(board, m, board.whiteToMove);
-            board.whiteToMove = !board.whiteToMove;
           }
         }
       }

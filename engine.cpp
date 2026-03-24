@@ -12,6 +12,24 @@ long long nodesSearched = 0;
 auto startTime = chrono::high_resolution_clock::now();
 int timeLimit = 1000; // default 1s
 
+enum NodeType { EXACT, ALPHA, BETA };
+
+struct TTEntry {
+  uint64_t hash;
+  int depth;
+  int score;
+  NodeType type;
+};
+
+const int TT_SIZE = 1 << 20; // ~1M entries
+TTEntry tt[TT_SIZE];
+
+void clearTT() {
+  for (int i = 0; i < TT_SIZE; i++) {
+    tt[i].hash = 0;
+  }
+}
+
 void checkTime() {
   /*
   check every 2048 nodes if we have exceeded the time limit
@@ -35,6 +53,18 @@ int minimax(Board &board, int depth, int alpha, int beta, bool isWhite) {
   if (stopSearch)
     return 0;
 
+  // TT Lookup
+  uint64_t hash = board.hash;
+  TTEntry &entry = tt[hash % TT_SIZE];
+  if (entry.hash == hash && entry.depth >= depth) {
+    if (entry.type == EXACT)
+      return entry.score;
+    if (entry.type == ALPHA && entry.score <= alpha)
+      return alpha;
+    if (entry.type == BETA && entry.score >= beta)
+      return beta;
+  }
+
   if (depth == 0)
     return evaluate(board);
 
@@ -44,6 +74,9 @@ int minimax(Board &board, int depth, int alpha, int beta, bool isWhite) {
       return isWhite ? -1000000 : 1000000;
     return 0; // Stalemate
   }
+
+  int originalAlpha = alpha;
+  int bestScore = isWhite ? -2000000 : 2000000;
 
   if (isWhite) {
     for (auto &it : moves) {
@@ -56,7 +89,7 @@ int minimax(Board &board, int depth, int alpha, int beta, bool isWhite) {
       if (beta <= alpha)
         break;
     }
-    return alpha;
+    bestScore = alpha;
   } else {
     for (auto &it : moves) {
       makeMove(board, it, false);
@@ -68,8 +101,24 @@ int minimax(Board &board, int depth, int alpha, int beta, bool isWhite) {
       if (beta <= alpha)
         break;
     }
-    return beta;
+    bestScore = beta;
   }
+
+  // Store in Transposition Table
+  // We store type because if we have gotten a score with pruning then we dont
+  // exactly know the exact score, it could be anything between alpha and beta,
+  // so we store the type to indicate that the score is not exact.
+  entry.hash = hash;
+  entry.score = bestScore;
+  entry.depth = depth;
+  if (bestScore <= originalAlpha)
+    entry.type = ALPHA;
+  else if (bestScore >= beta)
+    entry.type = BETA;
+  else
+    entry.type = EXACT;
+
+  return bestScore;
 }
 
 string iterativeDeepening(Board &board, int timeLimitMs, bool isWhite) {

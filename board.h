@@ -58,7 +58,17 @@ struct Board {
            // bits where each bit represents a castling right.
   // 1: white king side, 2: white queen side, 4: black king side, 8: black queen
   // side
+  uint64_t hash = 0;
 };
+
+// Zobrist Hashing
+extern uint64_t pieceKeys[12][64];
+extern uint64_t sideKey;
+extern uint64_t castlingKeys[16];
+extern uint64_t enPassantKeys[8];
+
+void initZobrist();
+uint64_t computeHash(const Board &board);
 
 void boardUpdate(Board &board);
 void updateBoard(Board &board);

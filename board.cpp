@@ -1,11 +1,75 @@
 #include "board.h"
 #include "move_gen.h"
+#include <random>
 #include <sstream>
 
 using namespace std;
 
 std::map<PieceType, int> PiecePoint = {{PAWN, 1}, {KNIGHT, 3}, {BISHOP, 3},
                                        {ROOK, 5}, {QUEEN, 9},  {KING, 10000}};
+
+uint64_t pieceKeys[12][64];
+uint64_t sideKey;
+uint64_t castlingKeys[16];
+uint64_t enPassantKeys[8];
+
+void initZobrist() {
+  std::mt19937_64 rng(123456789ULL);
+  std::uniform_int_distribution<uint64_t> dist(0, 0xFFFFFFFFFFFFFFFFULL);
+
+  for (int i = 0; i < 12; i++) {
+    for (int j = 0; j < 64; j++) {
+      pieceKeys[i][j] = dist(rng);
+    }
+  }
+  sideKey = dist(rng);
+  for (int i = 0; i < 16; i++) {
+    castlingKeys[i] = dist(rng);
+  }
+  for (int i = 0; i < 8; i++) {
+    enPassantKeys[i] = dist(rng);
+  }
+}
+
+int getPieceIndex(PieceType type, bool isWhite) {
+  if (type == NONE)
+    return -1;
+  return (static_cast<int>(type) - 1) + (isWhite ? 0 : 6);
+}
+
+uint64_t computeHash(const Board &board) {
+  uint64_t h = 0;
+
+  auto processPieces = [&](uint64_t pieces, PieceType type, bool isWhite) {
+    while (pieces) {
+      int sq = __builtin_ctzll(pieces);
+      h ^= pieceKeys[getPieceIndex(type, isWhite)][sq];
+      pieces &= pieces - 1;
+    }
+  };
+
+  processPieces(board.whitePawns, PAWN, true);
+  processPieces(board.whiteKnights, KNIGHT, true);
+  processPieces(board.whiteBishops, BISHOP, true);
+  processPieces(board.whiteRooks, ROOK, true);
+  processPieces(board.whiteQueen, QUEEN, true);
+  processPieces(board.whiteKing, KING, true);
+
+  processPieces(board.blackPawns, PAWN, false);
+  processPieces(board.blackKnights, KNIGHT, false);
+  processPieces(board.blackBishops, BISHOP, false);
+  processPieces(board.blackRooks, ROOK, false);
+  processPieces(board.blackQueen, QUEEN, false);
+  processPieces(board.blackKing, KING, false);
+
+  if (!board.whiteToMove)
+    h ^= sideKey;
+  h ^= castlingKeys[board.castlingRights];
+  if (board.enPassantSq != -1)
+    h ^= enPassantKeys[board.enPassantSq % 8];
+
+  return h;
+}
 
 void boardUpdate(Board &board) {
   board.whiteBoard = board.whitePawns | board.whiteKnights |
@@ -94,18 +158,36 @@ void makeMove(Board &board, Move &move, bool isWhite) {
   move.prevCastlingRights = board.castlingRights;
   move.prevEnPassantSq = board.enPassantSq;
 
+  // XOR out old castling and EP
+  board.hash ^= castlingKeys[board.castlingRights];
+  if (board.enPassantSq != -1)
+    board.hash ^= enPassantKeys[board.enPassantSq % 8];
+
+  // Toggle side to move and XOR sideKey
+  board.whiteToMove = !board.whiteToMove;
+  board.hash ^= sideKey;
+
   uint64_t from = 1ULL << (move.from - 1);
   uint64_t to = 1ULL << (move.to - 1);
   uint64_t fromTo = from | to;
 
+  int fromSq = move.from - 1;
+  int toSq = move.to - 1;
+
   // Handle captures
   if (move.isEnPassant) {
-    uint64_t capSq = isWhite ? (to >> 8) : (to << 8);
-    if (isWhite)
+    int capSqIdx = isWhite ? (toSq - 8) : (toSq + 8);
+    uint64_t capSq = 1ULL << capSqIdx;
+    if (isWhite) {
       board.blackPawns ^= capSq;
-    else
+      board.hash ^= pieceKeys[getPieceIndex(PAWN, false)][capSqIdx];
+    } else {
       board.whitePawns ^= capSq;
+      board.hash ^= pieceKeys[getPieceIndex(PAWN, true)][capSqIdx];
+    }
   } else if (move.capturedPiece != NONE) {
+    int capIdx = getPieceIndex(move.capturedPiece, !isWhite);
+    board.hash ^= pieceKeys[capIdx][toSq];
     if (isWhite) {
       if (to & board.blackPawns)
         board.blackPawns ^= to;
@@ -137,8 +219,15 @@ void makeMove(Board &board, Move &move, bool isWhite) {
 
   // Handle move
   PieceType p = move.piece;
-  if (move.promotionPiece != NONE)
-    p = move.promotionPiece;
+  int pIdx = getPieceIndex(move.piece, isWhite);
+  board.hash ^= pieceKeys[pIdx][fromSq];
+
+  if (move.promotionPiece != NONE) {
+    int promIdx = getPieceIndex(move.promotionPiece, isWhite);
+    board.hash ^= pieceKeys[promIdx][toSq];
+  } else {
+    board.hash ^= pieceKeys[pIdx][toSq];
+  }
 
   if (isWhite) {
     switch (move.piece) {
@@ -236,16 +325,24 @@ void makeMove(Board &board, Move &move, bool isWhite) {
     if (isWhite) {
       if (move.to == 7) {
         board.whiteRooks ^= (1ULL << 7) | (1ULL << 5);
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][7];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][5];
       } // g1
       else if (move.to == 3) {
         board.whiteRooks ^= (1ULL << 0) | (1ULL << 3);
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][0];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][3];
       } // c1
     } else {
       if (move.to == 63) {
         board.blackRooks ^= (1ULL << 63) | (1ULL << 61);
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][63];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][61];
       } // g8
       else if (move.to == 59) {
         board.blackRooks ^= (1ULL << 56) | (1ULL << 59);
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][56];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][59];
       } // c8
     }
   }
@@ -259,7 +356,6 @@ void makeMove(Board &board, Move &move, bool isWhite) {
   }
 
   // Update castlingRights
-
   if (move.piece == KING) {
     if (isWhite)
       board.castlingRights &= ~3;
@@ -291,6 +387,11 @@ void makeMove(Board &board, Move &move, bool isWhite) {
       board.castlingRights &= ~8;
   }
 
+  // XOR in new castling and EP
+  board.hash ^= castlingKeys[board.castlingRights];
+  if (board.enPassantSq != -1)
+    board.hash ^= enPassantKeys[board.enPassantSq % 8];
+
   updateBoard(board);
 }
 
@@ -298,6 +399,52 @@ void unMakeMove(Board &board, Move &move, bool isWhite) {
   uint64_t from = 1ULL << (move.from - 1);
   uint64_t to = 1ULL << (move.to - 1);
   uint64_t fromTo = from | to;
+
+  int fromSq = move.from - 1;
+  int toSq = move.to - 1;
+
+  // XOR out current castling and EP
+  board.hash ^= castlingKeys[board.castlingRights];
+  if (board.enPassantSq != -1)
+    board.hash ^= enPassantKeys[board.enPassantSq % 8];
+
+  // Restore captured piece hash
+  if (move.isEnPassant) {
+    int capSqIdx = isWhite ? (toSq - 8) : (toSq + 8);
+    board.hash ^= pieceKeys[getPieceIndex(PAWN, !isWhite)][capSqIdx];
+  } else if (move.capturedPiece != NONE) {
+    board.hash ^= pieceKeys[getPieceIndex(move.capturedPiece, !isWhite)][toSq];
+  }
+
+  // Restore moving piece hash
+  int pIdx = getPieceIndex(move.piece, isWhite);
+  board.hash ^= pieceKeys[pIdx][fromSq];
+  if (move.promotionPiece != NONE) {
+    board.hash ^= pieceKeys[getPieceIndex(move.promotionPiece, isWhite)][toSq];
+  } else {
+    board.hash ^= pieceKeys[pIdx][toSq];
+  }
+
+  // Handle castling rook hash
+  if (move.isCastling) {
+    if (isWhite) {
+      if (move.to == 7) {
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][7];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][5];
+      } else if (move.to == 3) {
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][0];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, true)][3];
+      }
+    } else {
+      if (move.to == 63) {
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][63];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][61];
+      } else if (move.to == 59) {
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][56];
+        board.hash ^= pieceKeys[getPieceIndex(ROOK, false)][59];
+      }
+    }
+  }
 
   // Move the pieces back
   if (isWhite) {
@@ -467,6 +614,13 @@ void unMakeMove(Board &board, Move &move, bool isWhite) {
   // Restore state
   board.castlingRights = move.prevCastlingRights;
   board.enPassantSq = move.prevEnPassantSq;
+  board.whiteToMove = !board.whiteToMove;
+  board.hash ^= sideKey;
+
+  // XOR in restored castling and EP
+  board.hash ^= castlingKeys[board.castlingRights];
+  if (board.enPassantSq != -1)
+    board.hash ^= enPassantKeys[board.enPassantSq % 8];
 
   updateBoard(board);
 }
@@ -671,6 +825,12 @@ void loadFEN(Board &board, string fen) {
   }
 
   updateBoard(board);
+  static bool zobristInit = false;
+  if (!zobristInit) {
+    initZobrist();
+    zobristInit = true;
+  }
+  board.hash = computeHash(board);
 }
 
 Move parseMove(Board &board, string moveStr, bool isWhite) {
