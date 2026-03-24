@@ -50,8 +50,8 @@ go depth 6
 
 ## 📈 Roadmap (Future Improvements)
 
-- [ ] **Zobrist Hashing**: To support Transposition Tables.
-- [ ] **Transposition Tables**: To avoid redundant move calculations.
+- [x] **Zobrist Hashing**: To support Transposition Tables.
+- [x] **Transposition Tables**: To avoid redundant move calculations.
 - [ ] **Quiescence Search**: To improve evaluation stability by searching captures until quiet positions are reached.
 - [ ] **Move Ordering**: Heuristics like MVV-LVA or Killer Heuristic to speed up Alpha-Beta pruning.
 - [ ] **Advanced PST**: More refined Piece-Square Tables for better positional understanding.
