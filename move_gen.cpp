@@ -234,11 +234,11 @@ bool compareMoves(const Move &a, const Move &b) {
   if (a.capturedPiece == NONE && b.capturedPiece != NONE)
     return false;
   // order by diff between piece and captured piece points in descending order
-  if (PiecePoint[a.piece] - PiecePoint[a.capturedPiece] >
-      PiecePoint[b.piece] - PiecePoint[b.capturedPiece])
+  if (PiecePoint[a.capturedPiece] - PiecePoint[a.piece] >
+      PiecePoint[b.capturedPiece] - PiecePoint[b.piece])
     return true;
-  if (PiecePoint[a.piece] - PiecePoint[a.capturedPiece] <
-      PiecePoint[b.piece] - PiecePoint[b.capturedPiece])
+  if (PiecePoint[a.capturedPiece] - PiecePoint[a.piece] <
+      PiecePoint[b.capturedPiece] - PiecePoint[b.piece])
     return false;
   return false;
 }
