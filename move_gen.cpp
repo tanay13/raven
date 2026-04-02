@@ -219,28 +219,30 @@ bool isKingInCheck(Board &board, bool isWhite) {
   return false;
 }
 
+constexpr int MVV_LVA_VALUES[7] = {0, 100, 300, 300, 500, 900, 10000};
+
+static inline int scoreMove(const Move &m) {
+  int score = 0;
+  if (m.capturedPiece != NONE) {
+    // Multiplying the victim by a large factor ensures the victim's value
+    // dominates Subtracting the attacker's value guarantees that weaker
+    // attackers are preferred Example: PxQ (9000 - 100 = 8900) is evaluated
+    // before RxQ (9000 - 500 = 8500)
+    score = 10 * MVV_LVA_VALUES[m.capturedPiece] - MVV_LVA_VALUES[m.piece];
+  }
+
+  // For promotions
+  if (m.promotionPiece != NONE) {
+    score += MVV_LVA_VALUES[m.promotionPiece];
+  }
+
+  return score;
+}
+
 // function to compare the moves..used for ordering the moves properly to search
 // for potentially good moves first
 bool compareMoves(const Move &a, const Move &b) {
-  // captured by pawns should be first, ordering by captured piece points in
-  // descending order for example, capturing a queen with a pawn should be
-  // first, then capturing a rook with a pawn, and so on..
-
-  if (a.capturedPiece == NONE && b.capturedPiece == NONE)
-    return false;
-
-  if (a.capturedPiece != NONE && b.capturedPiece == NONE)
-    return true;
-  if (a.capturedPiece == NONE && b.capturedPiece != NONE)
-    return false;
-  // order by diff between piece and captured piece points in descending order
-  if (PiecePoint[a.capturedPiece] - PiecePoint[a.piece] >
-      PiecePoint[b.capturedPiece] - PiecePoint[b.piece])
-    return true;
-  if (PiecePoint[a.capturedPiece] - PiecePoint[a.piece] <
-      PiecePoint[b.capturedPiece] - PiecePoint[b.piece])
-    return false;
-  return false;
+  return scoreMove(a) > scoreMove(b);
 }
 
 vector<Move> generateAllMoves(Board &board, bool isWhite) {
